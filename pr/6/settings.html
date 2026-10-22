@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>akp846-app settings</title>
+<script>
+  (() => {
+    const param = new URLSearchParams(location.search).get("theme");
+    document.documentElement.dataset.theme = ["light", "dark"].includes(param) ? param
+      : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  })();
+</script>
+<link rel="stylesheet" href="core/tokens.css">
+<link rel="stylesheet" href="settings.css">
+<script type="module" src="settings.js"></script>
+</head>
+<body>
+<header class="top-bar">
+  <h1>Screen settings</h1>
+  <nav class="actions">
+    <button class="btn text" id="import" type="button">Import</button>
+    <button class="btn text" id="export" type="button">Export</button>
+    <a class="link" href="layout.html">Layout</a>
+    <a class="link" href="./" target="_blank" rel="noopener">Open the screen</a>
+  </nav>
+</header>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+<p class="note" id="note"></p>
+<main id="form" class="sections" aria-live="polite">
+  <p class="loading">Loading settings…</p>
+</main>
+<footer class="save-bar">
+  <p class="status" id="status" role="status"></p>
+  <button class="btn text" id="discard" type="button" disabled>Discard</button>
+  <button class="btn filled" id="save" type="button" disabled>Save</button>
+</footer>
+</body>
+</html>
