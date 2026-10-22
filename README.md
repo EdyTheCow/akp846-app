@@ -55,8 +55,8 @@ can check it before you save. The `settings.json` from the old server version
 <img src="docs/screenshots/layout-dark.png" alt="The layout editor" width="600">
 
 The layout page arranges the screen: which widgets are on which page, in what
-order, and the order of the pages. Each page is drawn to scale, as it will
-look on the keyboard.
+order, the order of the pages, and the rail. Each page is drawn to scale, rail
+included, as it will look on the keyboard.
 
 - Drag a widget from the library onto a page, or tap it to add it to the
   selected page (tap a page to select it).
@@ -69,6 +69,21 @@ look on the keyboard.
 A page holds up to 4 widgets and needs at least one; a widget can be on
 several pages, but only once on each. There can be up to 6 pages. On a phone,
 press and hold a widget to start dragging it.
+
+### The rail
+
+The rail at the side of the screen has three groups of buttons, in an order
+you choose: a button for each page (the page on show is highlighted), the
+light/dark button, and buttons the page's widgets add (Departures' route
+switch, on its page only).
+
+- Each page has an icon, from a set or *Automatic* (its first widget's), and
+  can be left off the rail.
+- Labels can be turned off: about 6 buttons fit without them, 4 with them.
+  When a page has more buttons than fit with labels, its rail shows icons
+  only; the editor says so for each page, and warns when even that won't fit.
+- Swiping left or right on the screen goes to the next or previous page. It
+  can be turned off.
 
 ## On the keyboard (Hyprland)
 
