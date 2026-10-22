@@ -86,7 +86,9 @@ export const settingsSchema = {
   },
 };
 
-export const defaultSettings = () => ({ version: SETTINGS_VERSION, ...defaultsOf(settingsSchema) });
+// Through validate, so the defaults have the same shape (key order included) as
+// stored settings once loaded, and compare equal as JSON
+export const defaultSettings = () => validateSettings({ version: SETTINGS_VERSION, ...defaultsOf(settingsSchema) }).settings;
 
 /** Returns { settings, errors }; settings is always complete and usable. */
 export function validateSettings(input) {
