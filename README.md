@@ -1,4 +1,4 @@
-# AKP846 screen app
+# akp846-app
 
 A web app for the 1920 x 480 touchscreen in the AJAZZ AKP846 keyboard, driven by
 [akp846-display](https://github.com/EdyTheCow/akp846-display). It's published
@@ -41,8 +41,8 @@ can check it before you save. The `settings.json` from the old server version
 The screen is the `DVI-I-1` monitor. Open the screen page in a browser window
 on it and make it fullscreen. Double-tap toggles fullscreen. The layout is
 anchored to the top, because Zen's fullscreen window is 15 px taller than the
-screen. A window rule matching the page title (*AKP846 screen* until the
-settings load, then your place name) can put it there at login.
+screen. A window rule matching the page title, *akp846-app*, can put it there
+at login.
 
 URL parameters, useful while testing: `?theme=light|dark`, `?page=1`, and
 `?debug` (logs touches on screen).

@@ -16,7 +16,7 @@ export const general = {
   type: "group",
   label: "General",
   fields: {
-    placeName: { type: "text", label: "Place name", help: "Used in the page title and screen-reader labels.", default: "Oslo", maxLength: 40 },
+    placeName: { type: "text", label: "Place name", help: "Used in screen-reader labels.", default: "Oslo", maxLength: 40 },
     latitude: { type: "number", label: "Latitude", default: 59.9133, min: -90, max: 90 },
     longitude: { type: "number", label: "Longitude", default: 10.7389, min: -180, max: 180 },
     timezone: { type: "text", label: "Time zone", help: "IANA name, e.g. Europe/Oslo.", default: "Europe/Oslo", check: validTimeZone },
