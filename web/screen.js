@@ -60,7 +60,6 @@ async function build(next) {
         general: next.general,
         fmt,
         params,
-        refreshRail: () => renderRail(),
         emit: (type, detail) => onWidgetEvent(type, detail),
         isVisible: () => index === pageIndex,
       };
@@ -116,11 +115,6 @@ function renderRail() {
       }));
     } else if (item.kind === "theme") {
       buttons.push(themeButton());
-    } else {
-      for (const m of mounted) {
-        if (m.page !== pageIndex) continue;
-        for (const action of m.instance.railActions?.() ?? []) buttons.push(railButton(action));
-      }
     }
   }
   $("rail").replaceChildren(...buttons);

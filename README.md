@@ -30,9 +30,9 @@ Widgets so far:
 | Now Playing | What [TIDAL Hi-Fi](https://github.com/Mastermindzh/tidal-hifi) is playing, with album art and playback controls |
 
 Widgets are arranged on pages: by default *Home* (clock, weather, departures)
-and *Music* (Now Playing). The rail on the right switches pages, light and
-dark, and departure routes. When music starts the screen switches to the music
-page and goes back after it has been paused for a while.
+and *Music* (Now Playing). The rail on the right switches pages and light and
+dark; swiping left or right changes page too. When music starts the screen
+switches to the music page and goes back after it has been paused for a while.
 
 `first-app.html` is the original single-file version of the Home page. It
 still works on its own, straight from disk.
@@ -72,10 +72,10 @@ press and hold a widget to start dragging it.
 
 ### The rail
 
-The rail at the side of the screen has three groups of buttons, in an order
-you choose: a button for each page (the page on show is highlighted), the
-light/dark button, and buttons the page's widgets add (Departures' route
-switch, on its page only).
+The rail at the side of the screen is for getting around: a button for each
+page (the page on show is highlighted) and the light/dark button, in the order
+you choose. Controls that belong to a widget are on its card instead, such as
+Departures' route buttons.
 
 - Each page has an icon, from a set or *Automatic* (its first widget's), and
   can be left off the rail.
@@ -170,10 +170,9 @@ scripts/serve.js     local static server for development
    or `"fill"`. `settings` uses the field types in `web/core/fields.js`:
    toggle, text, number, select, group and list.
 2. Create `web/widgets/<id>/<id>.js`. It exports `mount(card, ctx)`, which
-   fills in the card and returns `{ destroy() }`. It can also return
-   `railActions()` to add rail buttons. `ctx` provides `settings` (yours, already
-   validated), `general`, `fmt` (date and time formatters), `refreshRail()` and
-   `emit()`.
+   fills in the card and returns `{ destroy() }`. Its controls go on the card;
+   the rail is for navigation only. `ctx` provides `settings` (yours, already
+   validated), `general`, `fmt` (date and time formatters) and `emit()`.
 3. Create `web/widgets/<id>/<id>.css`, with selectors scoped to `.<id>`.
 4. Add the schema to `web/widgets/registry.js`.
 

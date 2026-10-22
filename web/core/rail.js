@@ -1,7 +1,7 @@
 // What the rail holds on a page, in order, from the layout's rail settings: a
-// button per page (the one on show highlighted), light/dark, and the buttons
-// the page's widgets add. The screen makes these into working buttons; the
-// layout editor draws the same buttons as a preview.
+// button per page (the one on show highlighted) and light/dark. Navigation
+// only: a widget's own controls are on its card. The screen makes these into
+// working buttons; the layout editor draws the same buttons as a preview.
 import { lineIcon, make } from "./dom.js";
 import { ICONS } from "./icons.js";
 import { widgetById } from "../widgets/registry.js";
@@ -14,9 +14,8 @@ export function pageIcon(page) {
 
 /**
  * The rail on page `index`, top to bottom:
- *   { kind: "page", page, current } | { kind: "theme" } | { kind: "widgets" }
- * "widgets" stands for whatever buttons the page's widgets add, which only
- * the caller knows. With a single page there are no page buttons.
+ *   { kind: "page", page, current } | { kind: "theme" }
+ * With a single page there are no page buttons.
  */
 export function railItems(layout, index) {
   const items = [];
@@ -27,8 +26,6 @@ export function railItems(layout, index) {
       });
     } else if (group === "theme" && layout.rail.theme) {
       items.push({ kind: "theme" });
-    } else if (group === "widgets") {
-      items.push({ kind: "widgets" });
     }
   }
   return items;
