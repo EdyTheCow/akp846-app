@@ -1,9 +1,11 @@
+import { ICONS } from "../../core/icons.js";
+
 export default {
   id: "nowplaying",
   name: "Now Playing",
   description: "What TIDAL Hi-Fi is playing, with playback controls. Needs TIDAL Hi-Fi's Web API (Settings → API).",
   width: "fill",
-  icon: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  icon: ICONS.music,
   settings: {
     host: {
       type: "text", label: "TIDAL Hi-Fi API host", help: "Where TIDAL Hi-Fi's Web API listens; 127.0.0.1 unless you changed it.",

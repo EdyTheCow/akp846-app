@@ -1,3 +1,5 @@
+import { ICONS } from "../../core/icons.js";
+
 const MODES = [
   { value: "metro", label: "Metro (T-bane)" },
   { value: "bus", label: "Bus" },
@@ -44,7 +46,7 @@ export default {
   name: "Departures",
   description: "Live departures from Entur (all of Norway). Several routes are switched from the rail.",
   width: "fill",
-  icon: '<rect x="5" y="2.5" width="14" height="14.5" rx="3.5"/><path d="M5 10h14M8.5 17l-2.5 4.5M15.5 17l2.5 4.5"/>',
+  icon: ICONS.train,
   settings: {
     clientName: {
       type: "text", label: "Entur client name",
@@ -71,4 +73,6 @@ export default {
       ],
     },
   },
+  // The rail button it adds, for the layout editor's preview: the next route's, when there are several
+  railButtons: (settings) => (settings.routes.length < 2 ? [] : [{ icon: ICONS[settings.routes[1].icon], label: settings.routes[1].label }]),
 };

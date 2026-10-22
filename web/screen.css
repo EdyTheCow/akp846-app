@@ -39,6 +39,8 @@ body.idle { cursor: none; }
   padding: calc(var(--u) * 3.6);
   display: grid;
   grid-template-columns: minmax(0, 1fr) calc(var(--u) * 23.6);
+  /* The row keeps the stage's height even if the rail is too tall for it (see fitRail) */
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--gap);
 }
 
@@ -137,79 +139,6 @@ body.idle { cursor: none; }
 .dot.good { background: var(--status-good); }
 .dot.serious { background: var(--status-serious); }
 .dot.critical { background: var(--status-critical); }
-
-/* ---------- Control rail ---------- */
-/* Concentric corners: rail radius = button radius (5u) + the even padding around the buttons (2.3u) */
-.rail {
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(var(--u) * 2.7);
-  padding: calc(var(--u) * 2.3);
-  border-radius: calc(var(--u) * 7.3);
-  background: var(--md-surface-container);
-  transition: background-color 0.4s;
-}
-
-.rail:empty { display: none; }
-
-/* Filled tonal buttons: 84 x ~78 px, about 10 mm on this panel, with a larger tap area */
-.rail-btn {
-  position: relative;
-  width: calc(var(--u) * 19);
-  padding: calc(var(--u) * 2.6) 0 calc(var(--u) * 2.2);
-  border: 0;
-  border-radius: calc(var(--u) * 5);
-  background: var(--md-secondary-container);
-  color: var(--md-on-secondary-container);
-  font: inherit;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(var(--u) * 0.8);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: border-radius 0.15s, transform 0.1s, background-color 0.2s;
-}
-
-.rail-btn::after {
-  content: "";
-  position: absolute;
-  inset: calc(var(--u) * -1.3);
-}
-
-/* Pressed: Material state layer, plus the expressive shape change */
-.rail-btn:active {
-  background: color-mix(in srgb, var(--md-on-secondary-container) 12%, var(--md-secondary-container));
-  border-radius: calc(var(--u) * 3.4);
-  transform: scale(0.96);
-}
-
-.rail-btn:focus-visible {
-  outline: 2px solid var(--md-primary);
-  outline-offset: 2px;
-}
-
-/* Hover only for a real mouse, so a tap doesn't leave the button highlighted */
-@media (hover: hover) {
-  .rail-btn:hover { background: color-mix(in srgb, var(--md-on-secondary-container) 8%, var(--md-secondary-container)); }
-}
-
-.rail-icon {
-  width: calc(var(--u) * 7.2);
-  height: calc(var(--u) * 7.2);
-}
-
-.rail-label {
-  font-size: calc(var(--u) * 4.6);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.theme-btn .to-dark,
-:root[data-theme="light"] .theme-btn .to-light { display: none; }
-:root[data-theme="light"] .theme-btn .to-dark { display: block; }
 
 /* ---------- Startup problems ---------- */
 .fatal {
