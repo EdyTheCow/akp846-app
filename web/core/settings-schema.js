@@ -41,7 +41,6 @@ export const general = {
 export const RAIL_GROUPS = [
   { value: "pages", label: "Page buttons" },
   { value: "theme", label: "Light/dark" },
-  { value: "widgets", label: "Widget buttons" },
 ];
 
 export const layout = {
@@ -87,7 +86,7 @@ export const layout = {
       label: "Rail",
       fields: {
         order: {
-          type: "list", label: "Order, top to bottom", min: 3, max: 3, unique: true,
+          type: "list", label: "Order, top to bottom", min: 2, max: 2, unique: true,
           item: { type: "select", label: "Group", default: "pages", options: RAIL_GROUPS },
           default: RAIL_GROUPS.map((g) => g.value),
         },
@@ -117,9 +116,17 @@ export const settingsSchema = {
 // stored settings once loaded, and compare equal as JSON
 export const defaultSettings = () => validateSettings({ version: SETTINGS_VERSION, ...defaultsOf(settingsSchema) }).settings;
 
+/** Brings settings saved by an earlier version up to date, before they're validated. */
+function upgrade(input) {
+  // The rail's "widget buttons" group went when Departures got its route buttons on the card
+  const order = input?.layout?.rail?.order;
+  if (!Array.isArray(order) || !order.includes("widgets")) return input;
+  return { ...input, layout: { ...input.layout, rail: { ...input.layout.rail, order: order.filter((g) => g !== "widgets") } } };
+}
+
 /** Returns { settings, errors }; settings is always complete and usable. */
 export function validateSettings(input) {
   const errors = [];
-  const settings = validate(settingsSchema, input, [], errors);
+  const settings = validate(settingsSchema, upgrade(input), [], errors);
   return { settings: { version: SETTINGS_VERSION, ...settings }, errors };
 }

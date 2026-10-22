@@ -6,9 +6,60 @@
   --chip-bg: color-mix(in srgb, var(--on) 12%, var(--md-primary-container));
   grid-template-columns: calc(var(--u) * 64) minmax(0, 1fr);
   column-gap: calc(var(--u) * 5);
+  position: relative;
   background: var(--md-primary-container);
   color: var(--on);
 }
+
+/*
+ * The route buttons: a segmented button in the space above the title, which
+ * the card's centred rows leave free. Each is 44 px tall with a larger tap
+ * area; the route on show is filled.
+ */
+.transit .routes {
+  position: absolute;
+  top: calc(var(--u) * 3);
+  /* The buttons' edge lines up with the card's padding, as the list below does */
+  right: calc(var(--u) * 4.9);
+  max-width: calc(100% - var(--u) * 9.8);
+  display: flex;
+  gap: calc(var(--u) * 0.6);
+  padding: calc(var(--u) * 0.6);
+  border-radius: 999px;
+  background: var(--chip-bg);
+}
+
+.transit .route-btn {
+  position: relative;
+  min-width: 0;
+  height: calc(var(--u) * 10);
+  padding: 0 calc(var(--u) * 3.4) 0 calc(var(--u) * 2.8);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--on);
+  font: inherit;
+  font-size: calc(var(--u) * 5);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.4);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.transit .route-btn::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--u) * -1.6) calc(var(--u) * -0.3);
+}
+
+.transit .route-btn svg { flex: none; width: calc(var(--u) * 5.8); height: calc(var(--u) * 5.8); }
+.transit .route-btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.transit .route-btn.on { background: var(--on); color: var(--md-primary-container); }
+.transit .route-btn:active:not(.on) { background: color-mix(in srgb, var(--on) 12%, transparent); }
+.transit .route-btn:focus-visible { outline: 2px solid var(--on); outline-offset: 2px; }
 
 .transit .line-badge {
   flex: none;

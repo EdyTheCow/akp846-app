@@ -12,7 +12,7 @@ const MODES = [
 const route = {
   type: "group",
   fields: {
-    label: { type: "text", label: "Button label", help: "Shown on the rail button that switches to this route.", default: "", maxLength: 12 },
+    label: { type: "text", label: "Button label", help: "Shown on the card's button for this route, when there are several.", default: "", maxLength: 12 },
     name: { type: "text", label: "Title", help: "Shown at the top of the card.", default: "", maxLength: 40 },
     icon: {
       type: "select", label: "Icon", default: "bus",
@@ -44,7 +44,7 @@ const route = {
 export default {
   id: "transit",
   name: "Departures",
-  description: "Live departures from Entur (all of Norway). Several routes are switched from the rail.",
+  description: "Live departures from Entur (all of Norway). With several routes, buttons on the card switch between them.",
   width: "fill",
   icon: ICONS.train,
   settings: {
@@ -73,6 +73,4 @@ export default {
       ],
     },
   },
-  // The rail button it adds, for the layout editor's preview: the next route's, when there are several
-  railButtons: (settings) => (settings.routes.length < 2 ? [] : [{ icon: ICONS[settings.routes[1].icon], label: settings.routes[1].label }]),
 };
