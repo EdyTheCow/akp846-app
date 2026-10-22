@@ -14,6 +14,7 @@ const saveBtn = document.getElementById("save");
 const discardBtn = document.getElementById("discard");
 
 let saved = null; // what's stored
+let ownLayout = false; // the form's layout is to be saved (imported), not left as stored
 let state = null; // what the form shows
 let dirty = false;
 let errors = [];
@@ -48,14 +49,33 @@ function setStatus(text, isError = false) {
 
 // ---------- Rendering ----------
 function render() {
-  const { general, layout, widgets } = settingsSchema.fields;
+  const { general, widgets } = settingsSchema.fields;
   form.replaceChildren(
     section("General", null, null, general, ["general"]),
-    section("Pages", null, '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/>', layout, ["layout"]),
-    ...Object.entries(widgets.fields).map(([id, group]) =>
-      section(group.label, group.description, widgetById[id].icon, group, ["widgets", id])),
+    layoutSection(),
+    ...Object.entries(widgets.fields).map(([id, group]) => {
+      const el = section(group.label, group.description, widgetById[id].icon, group, ["widgets", id]);
+      el.id = `widget-${id}`; // the layout editor links here
+      return el;
+    }),
   );
   showErrors(errors);
+}
+
+// Pages are arranged in the layout editor; this only sums them up
+function layoutSection() {
+  const el = make("section", { className: "section layout-summary" });
+  const heading = make("h2");
+  heading.append(lineIcon('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14M15 5v14"/>'), "Pages");
+  const list = make("ul", { className: "page-summary" });
+  for (const page of state.layout.pages) {
+    const item = make("li");
+    item.append(make("strong", { textContent: `${page.name}:` }), ` ${page.widgets.map((id) => widgetById[id]?.name ?? id).join(", ")}`);
+    list.append(item);
+  }
+  const link = make("a", { className: "btn tonal", href: "layout.html", textContent: "Arrange pages and widgets" });
+  el.append(heading, list, link);
+  return el;
 }
 
 function section(title, description, icon, group, path) {
@@ -231,6 +251,7 @@ function adopt(settings) {
   saved = settings;
   state = structuredClone(settings);
   dirty = false;
+  ownLayout = false;
   errors = [];
   render();
 }
@@ -243,7 +264,8 @@ function save() {
     form.querySelector(".field-error:not(:empty)")?.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
-  const result = saveSettings(state);
+  // The layout editor owns the layout, unless one was imported here
+  const result = saveSettings(ownLayout ? state : { ...state, layout: loadSettings().settings.layout });
   if (result.errors) {
     showErrors(result.errors);
     setStatus(`Couldn't save: ${result.errors.map((e) => `${e.path} ${e.message}`.trim()).join("; ")}`, true);
@@ -277,6 +299,7 @@ importFile.addEventListener("change", async () => {
   // Into the form only, so it can be checked before Save
   const { settings, errors: problems } = validateSettings(input);
   state = settings;
+  ownLayout = true;
   errors = [];
   render();
   changed();
@@ -300,12 +323,19 @@ noteEl.textContent = previewNumber
   : "Saved in this browser. A screen open in the same browser updates as soon as you save. To move them to another browser, Export here and Import there.";
 const loaded = loadSettings();
 adopt(loaded.settings);
+if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 setStatus(loaded.errors.length ? `${loaded.errors.length} stored ${loaded.errors.length === 1 ? "setting wasn't" : "settings weren't"} valid and use the default` : "", loaded.errors.length > 0);
+const exceptLayout = (s) => JSON.stringify({ ...s, layout: null });
 watchSettings((next) => {
   if (JSON.stringify(next) === JSON.stringify(saved)) return;
   if (dirty) {
+    const others = exceptLayout(next) !== exceptLayout(saved);
     saved = next;
-    setStatus("Changed in another tab: Save overwrites, Discard loads it", true);
+    if (!ownLayout) {
+      state.layout = structuredClone(next.layout);
+      form.querySelector(".layout-summary")?.replaceWith(layoutSection());
+    }
+    if (others) setStatus("Changed in another tab: Save overwrites, Discard loads it", true);
   } else {
     adopt(next);
     setStatus("Updated from another tab");

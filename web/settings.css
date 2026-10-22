@@ -51,6 +51,20 @@ h1 { margin: 0; font-size: 28px; font-weight: 400; }
 
 
 .loading, .load-error { color: var(--md-on-surface-variant); }
+
+.page-summary {
+  margin: 8px 0 16px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  color: var(--md-on-surface-variant);
+}
+
+.page-summary strong { color: var(--md-on-surface); font-weight: 500; }
+.layout-summary { padding-bottom: 20px; }
+.layout-summary .btn { display: inline-flex; align-items: center; text-decoration: none; }
+.section { scroll-margin-top: 16px; }
 .load-error { color: var(--md-error); }
 
 .section {

@@ -6,7 +6,7 @@ import { loadSettings, watchSettings } from "./core/settings-client.js";
 import { store } from "./core/store.js";
 import { createTheme } from "./core/theme.js";
 import { keepUpToDate } from "./core/updates.js";
-import { widgetById } from "./widgets/registry.js";
+import { columnFor, widgetById } from "./widgets/registry.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -31,8 +31,6 @@ function loadWidget(id) {
   }
   return modules.get(id);
 }
-
-const columnFor = (width) => (width === "fill" ? "minmax(0, 1fr)" : `calc(var(--u) * ${width})`);
 
 // ---------- Build ----------
 async function build(next) {
