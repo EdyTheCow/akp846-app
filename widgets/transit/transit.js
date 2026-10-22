@@ -1,7 +1,7 @@
 // Live departures from Entur's journey planner (Ruter and the rest of Norway).
 // A route's `fromId` is a whole stop place or one platform (quay); departures
 // are kept only if the vehicle calls at `dest` after leaving.
-import { defineSymbols, make, refs } from "../../core/dom.js";
+import { lineIcon, make, onTap, refs } from "../../core/dom.js";
 import { ICONS } from "../../core/icons.js";
 import { fetchJSON } from "../../core/net.js";
 import { store } from "../../core/store.js";
@@ -22,11 +22,6 @@ const CALLS = `estimatedCalls(numberOfDepartures: 20, timeRange: 21600, whiteLis
     }
   }`;
 const queryFor = (kind) => `query ($id: String!, $modes: [TransportMode]) { place: ${kind}(id: $id) { ${CALLS} } }`;
-
-const SYMBOLS = ["train", "bus"].map((name) => `
-  <symbol id="i-${name}" viewBox="0 0 24 24">
-    <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</g>
-  </symbol>`).join("");
 
 function parseDepartures(calls, route) {
   return calls.flatMap((c) => {
@@ -55,8 +50,7 @@ function parseDepartures(calls, route) {
 
 const minutesUntil = (t) => Math.floor((t - Date.now()) / 60000);
 
-export function mount(card, { settings, fmt, refreshRail }) {
-  defineSymbols("transit", SYMBOLS);
+export function mount(card, { settings, fmt }) {
   card.classList.add("transit");
   card.setAttribute("aria-label", "Next departures");
   card.innerHTML = `
@@ -175,31 +169,37 @@ export function mount(card, { settings, fmt, refreshRail }) {
     refresh();
   }
 
+  // Several routes: a button for each at the top of the card, the one on show filled
+  if (routes.length > 1) {
+    const group = make("div", { className: "routes", role: "group" });
+    group.setAttribute("aria-label", "Routes");
+    const buttons = routes.map((route, i) => {
+      const button = make("button", { type: "button", className: "route-btn" });
+      button.setAttribute("aria-label", `${route.label || route.name}: ${route.name}`);
+      button.append(lineIcon(ICONS[route.icon]), make("span", { textContent: route.label || route.name }));
+      onTap(button, () => {
+        if (i === routeIndex) return;
+        routeIndex = i;
+        store.set("transit-route", String(routeIndex));
+        showChosen();
+        loadRoute();
+      });
+      return button;
+    });
+    const showChosen = () => buttons.forEach((b, i) => {
+      b.classList.toggle("on", i === routeIndex);
+      b.setAttribute("aria-pressed", String(i === routeIndex));
+    });
+    showChosen();
+    group.append(...buttons);
+    card.append(group);
+  }
+
   loadRoute();
   // Countdowns tick between fetches
   const ticker = setInterval(render, 5 * 1000);
 
   return {
-    // One rail button that steps to the next route, when there's more than one
-    railActions() {
-      if (routes.length < 2) return [];
-      const next = routes[(routeIndex + 1) % routes.length];
-      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      icon.setAttribute("class", "rail-icon");
-      icon.setAttribute("aria-hidden", "true");
-      icon.innerHTML = `<use href="#i-${next.icon}"/>`;
-      return [{
-        icon,
-        label: next.label,
-        ariaLabel: `Show ${next.label} departures`,
-        onTap: () => {
-          routeIndex = (routeIndex + 1) % routes.length;
-          store.set("transit-route", String(routeIndex));
-          loadRoute();
-          refreshRail();
-        },
-      }];
-    },
     destroy() {
       alive = false;
       clearTimeout(timer);

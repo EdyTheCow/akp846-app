@@ -25,7 +25,6 @@ const discardBtn = $("discard");
 let saved = null; // the stored layout: { pages, rail }
 let pages = null; // what the editor shows: [{ name, icon, inRail, widgets: [id, …] }]
 let rail = null; // and the rail: { order, labels, theme, swipe }
-let widgetSettings = null; // for the buttons widgets add to the rail
 let selected = 0; // the page a tapped library widget goes to
 let dirty = false;
 let showProblems = false; // after a Save that was refused
@@ -391,23 +390,16 @@ function previewRail(p) {
       el.append(railButton({ className: "page-btn", current: item.current, icon: lineIcon(pageIcon(page), "rail-icon"), label: pageName(item.page) }));
     } else if (item.kind === "theme") {
       el.append(railButton({ className: "theme-btn", icon: themeIcons(), label: document.documentElement.dataset.theme === "light" ? "Dark" : "Light" }));
-    } else {
-      for (const id of pages[p].widgets) {
-        for (const b of widgetById[id].railButtons?.(widgetSettings[id]) ?? []) {
-          el.append(railButton({ icon: lineIcon(b.icon, "rail-icon"), label: b.label }));
-        }
-      }
     }
   }
   for (const button of el.children) button.tabIndex = -1;
   return el;
 }
 
-const GROUP_ICONS = { pages: "grid", theme: "sun", widgets: "bus" };
+const GROUP_ICONS = { pages: "grid", theme: "sun" };
 const GROUP_HELP = {
   pages: "A button for each page, in the order of the pages below. The page on show is highlighted.",
   theme: "Switches between light and dark.",
-  widgets: "Buttons a page's widgets add, such as Departures' route switch. Only on that page.",
 };
 
 function renderRailSection() {
@@ -526,15 +518,9 @@ addEventListener("beforeunload", (ev) => {
 $("note").textContent = previewNumber
   ? `Preview of pull request #${previewNumber}: this layout is separate from the main screen's.`
   : "Saved in this browser, like the settings. A screen open in the same browser updates as soon as you save.";
-const initial = loadSettings().settings;
-widgetSettings = initial.widgets;
-adopt(initial.layout);
+adopt(loadSettings().settings.layout);
 setStatus("");
 watchSettings((next) => {
-  if (JSON.stringify(next.widgets) !== JSON.stringify(widgetSettings)) {
-    widgetSettings = next.widgets; // e.g. another route, so another rail button
-    renderPages();
-  }
   if (JSON.stringify(next.layout) === JSON.stringify(saved)) return;
   if (dirty) {
     saved = structuredClone(next.layout);
