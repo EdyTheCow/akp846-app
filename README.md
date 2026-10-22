@@ -34,9 +34,6 @@ and *Music* (Now Playing). The rail on the right switches pages and light and
 dark; swiping left or right changes page too. When music starts the screen
 switches to the music page and goes back after it has been paused for a while.
 
-`first-app.html` is the original single-file version of the Home page. It
-still works on its own, straight from disk.
-
 ## Settings
 
 <img src="docs/screenshots/settings-dark.png" alt="The settings page" width="550">
