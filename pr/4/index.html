@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="version" content="28adedee0ccc27f6f790a12224b833befb23ae2c">
+<title>akp846-app</title>
+<script>
+  // Paint the last theme straight away; screen.js works out the real one once the settings load
+  (() => {
+    const param = new URLSearchParams(location.search).get("theme");
+    let last = null;
+    try { last = localStorage.getItem("akp846-theme-last"); } catch {}
+    const theme = ["light", "dark"].includes(param) ? param
+      : ["light", "dark"].includes(last) ? last
+      : matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
+<link rel="stylesheet" href="core/tokens.css">
+<link rel="stylesheet" href="core/rail.css">
+<link rel="stylesheet" href="screen.css">
+<script type="module" src="screen.js"></script>
+</head>
+<body class="idle">
+<main class="stage" id="stage">
+  <div class="pages" id="pages"></div>
+  <nav class="rail" id="rail" aria-label="Display controls"></nav>
+</main>
+</body>
+</html>
