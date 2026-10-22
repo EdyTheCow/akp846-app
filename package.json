@@ -1,0 +1,13 @@
+{
+  "name": "akp846-app",
+  "version": "0.1.0",
+  "description": "Web app for the AJAZZ AKP846 keyboard's 1920x480 touchscreen: clock, weather, departures and TIDAL Hi-Fi",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node scripts/serve.js",
+    "check": "find web scripts -name '*.js' -exec node --check {} +"
+  }
+}

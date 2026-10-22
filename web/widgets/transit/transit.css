@@ -1,0 +1,87 @@
+/* The emphasised, primary-container card */
+.transit {
+  --on: var(--md-on-primary-container);
+  --on-variant: color-mix(in srgb, var(--md-on-primary-container) 80%, var(--md-primary-container));
+  --line: color-mix(in srgb, var(--md-on-primary-container) 22%, var(--md-primary-container));
+  --chip-bg: color-mix(in srgb, var(--on) 12%, var(--md-primary-container));
+  grid-template-columns: calc(var(--u) * 64) minmax(0, 1fr);
+  column-gap: calc(var(--u) * 5);
+  background: var(--md-primary-container);
+  color: var(--on);
+}
+
+.transit .line-badge {
+  flex: none;
+  min-width: calc(var(--u) * 8);
+  height: calc(var(--u) * 8);
+  padding: 0 calc(var(--u) * 1.6);
+  border-radius: calc(var(--u) * 2);
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--u) * 5.2);
+  line-height: 1;
+  font-weight: 700;
+  background: #ec700c;
+  color: #ffffff;
+}
+
+.transit .line-badge[hidden] { display: none; }
+
+/* A clock time instead of minutes when the next departure is an hour or more away */
+.transit .countdown.far { font-size: calc(var(--u) * 18); font-variant-numeric: tabular-nums; }
+
+.transit .countdown small {
+  margin-left: calc(var(--u) * 1.6);
+  font-size: calc(var(--u) * 8.5);
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--on-variant);
+}
+
+.transit .detail {
+  font-weight: 500;
+  color: var(--on-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.transit .chip-row {
+  grid-column: 1;
+  grid-row: 4;
+  align-self: start;
+}
+
+/* All departures cancelled: no countdown or list, so the reason gets the full width */
+.transit.disrupted .detail,
+.transit.disrupted .chip-row { grid-column: 1 / -1; }
+.transit.disrupted .detail { overflow: hidden; text-overflow: ellipsis; }
+
+.transit .later {
+  grid-column: 2;
+  grid-row: 2 / span 3;
+  align-self: start;
+  min-width: 0;
+}
+
+.transit .later[hidden] { display: none; }
+
+.transit .later ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.transit .later li {
+  display: grid;
+  grid-template-columns: calc(var(--u) * 24) minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: calc(var(--u) * 3.5);
+  padding: calc(var(--u) * 2.4) 0;
+  border-top: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.transit .later li:first-child { border-top: 0; padding-top: 0; }
+.transit .later .dep { font-size: calc(var(--u) * 8); font-weight: 500; }
+.transit .later .in { display: flex; align-items: center; gap: calc(var(--u) * 1.4); font-size: calc(var(--u) * 6.5); color: var(--on-variant); }
+.transit .later li.cancelled .dep { color: var(--on-variant); text-decoration: line-through; }

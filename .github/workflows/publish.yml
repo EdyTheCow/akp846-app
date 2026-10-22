@@ -1,0 +1,115 @@
+# Publishes the app to GitHub Pages, from the gh-pages branch:
+#   main        -> https://<owner>.github.io/<repo>/
+#   PR <number> -> https://<owner>.github.io/<repo>/pr/<number>/ (removed when the PR closes)
+# Previews are only made for branches in this repository: a fork's code
+# shouldn't run on this site, where the main screen's settings are stored.
+name: Publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# One at a time, in order; each run also retries its push if another got there first
+concurrency:
+  group: publish-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+      ACTION: ${{ github.event.action }}
+      SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out the source
+        if: github.event.action != 'closed'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SHA }}
+          path: src
+
+      - name: Check the code
+        if: github.event.action != 'closed'
+        working-directory: src
+        run: npm run check
+
+      - name: Publish
+        run: |
+          set -euo pipefail
+          if [ -n "$PR" ]; then dest="pr/$PR"; else dest=""; fi
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          # Puts this version in place (or removes a closed PR's preview) in ./site
+          update() {
+            if [ "$ACTION" = "closed" ]; then
+              rm -rf "site/$dest"
+              return
+            fi
+            mkdir -p "site/$dest"
+            if [ -z "$dest" ]; then
+              # The main site: replace everything except the previews
+              rsync -a --delete --exclude='/pr/' --exclude='/.git' --exclude='/.nojekyll' src/web/ site/
+            else
+              rsync -a --delete src/web/ "site/$dest/"
+            fi
+            sed -i "s|<meta name=\"version\" content=\"dev\">|<meta name=\"version\" content=\"$SHA\">|" "site/$dest/index.html"
+            printf '{"version":"%s"}\n' "$SHA" > "site/$dest/version.json"
+            touch site/.nojekyll
+          }
+
+          for attempt in 1 2 3 4 5; do
+            rm -rf site
+            if git ls-remote --exit-code --heads "$remote" gh-pages >/dev/null; then
+              git clone --quiet --depth 1 --branch gh-pages "$remote" site
+            else
+              git init --quiet -b gh-pages site
+              git -C site remote add origin "$remote"
+            fi
+            update
+            git -C site add -A
+            if git -C site diff --cached --quiet; then
+              echo "Nothing to publish"
+              exit 0
+            fi
+            if [ "$ACTION" = "closed" ]; then
+              message="Remove the preview of #$PR"
+            elif [ -n "$PR" ]; then
+              message="Preview #$PR at ${SHA:0:7}"
+            else
+              message="Publish ${SHA:0:7}"
+            fi
+            git -C site commit --quiet -m "$message"
+            if git -C site push --quiet origin gh-pages; then
+              echo "$message"
+              exit 0
+            fi
+            echo "gh-pages moved on; trying again"
+            sleep $((attempt * 3))
+          done
+          echo "Couldn't push to gh-pages" >&2
+          exit 1
+
+      - name: Link the preview
+        if: github.event.action == 'opened' || github.event.action == 'reopened'
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          base="https://${owner}.github.io/${repo}/pr/${PR}/"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "Preview (ready a minute or two after each push, updated on every push):
+
+          - Screen: ${base}
+          - Settings: ${base}settings.html
+
+          The preview's settings start as a copy of the main screen's and are kept separately."
