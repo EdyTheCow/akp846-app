@@ -7,6 +7,7 @@ on the keyboard's screen and it keeps itself up to date.
 
 - Screen: <https://edythecow.github.io/akp846-app/>
 - Settings: <https://edythecow.github.io/akp846-app/settings.html>
+- Layout: <https://edythecow.github.io/akp846-app/layout.html>
 
 ![Home page: clock, weather and departures](docs/screenshots/screen-home-dark.png)
 ![Music page: what TIDAL Hi-Fi is playing](docs/screenshots/screen-music-dark.png)
@@ -48,6 +49,26 @@ To move settings to another browser, use **Export** on the settings page and
 **Import** in the other one. An imported file goes into the form first, so you
 can check it before you save. The `settings.json` from the old server version
 (`~/.config/akp846-screen/settings.json`) imports the same way.
+
+## Pages and widgets
+
+<img src="docs/screenshots/layout-dark.png" alt="The layout editor" width="600">
+
+The layout page arranges the screen: which widgets are on which page, in what
+order, and the order of the pages. Each page is drawn to scale, as it will
+look on the keyboard.
+
+- Drag a widget from the library onto a page, or tap it to add it to the
+  selected page (tap a page to select it).
+- Drag widgets along a page or between pages; drag one back to the library to
+  take it off its page.
+- Drag a page by its handle to reorder the pages; rename, add and delete them
+  in place.
+- Every move also has a button, for the keyboard.
+
+A page holds up to 4 widgets and needs at least one; a widget can be on
+several pages, but only once on each. There can be up to 6 pages. On a phone,
+press and hold a widget to start dragging it.
 
 ## On the keyboard (Hyprland)
 
@@ -106,22 +127,23 @@ next check a few seconds later.
 Needs Node.js 20 or newer; there are no npm packages.
 
 ```sh
-npm start        # http://127.0.0.1:8846/ and /settings.html
+npm start        # http://127.0.0.1:8846/, /settings.html and /layout.html
 npm run check    # syntax check, as the workflow does
 ```
 
 Settings are per site, so the local copy has its own (Export and Import to
 copy them over).
 
-## Layout
+## Files
 
 ```
 web/                 the published site
   index.html/js      the screen: pages of widgets and the rail
   settings.html/js   the settings page, generated from the schemas
+  layout.html/js     the layout editor: pages and their widgets
   sw.js              service worker: network first, offline copy
   core/              shared CSS tokens, helpers, settings storage and schema,
-                     sunrise/sunset, theme, update checks
+                     sunrise/sunset, theme, update checks, drag and drop
   widgets/<id>/      schema.js (settings), <id>.js (mount), <id>.css
 scripts/serve.js     local static server for development
 ```
