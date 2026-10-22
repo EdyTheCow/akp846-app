@@ -8,6 +8,17 @@ on the keyboard's screen and it keeps itself up to date.
 - Screen: <https://edythecow.github.io/akp846-app/>
 - Settings: <https://edythecow.github.io/akp846-app/settings.html>
 
+![Home page: clock, weather and departures](docs/screenshots/screen-home-dark.png)
+![Music page: what TIDAL Hi-Fi is playing](docs/screenshots/screen-music-dark.png)
+
+<details>
+<summary>Light theme</summary>
+
+![Home page in the light theme](docs/screenshots/screen-home-light.png)
+![Music page in the light theme](docs/screenshots/screen-music-light.png)
+
+</details>
+
 Widgets so far:
 
 | Widget | |
@@ -26,6 +37,8 @@ page and goes back after it has been paused for a while.
 still works on its own, straight from disk.
 
 ## Settings
+
+<img src="docs/screenshots/settings-dark.png" alt="The settings page" width="550">
 
 Settings are stored in the browser, not on the site. Open the settings page in
 the same browser as the screen (on your main monitor, for example): saving
