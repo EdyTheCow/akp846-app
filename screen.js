@@ -40,7 +40,6 @@ async function build(next) {
   mounted = [];
   settings = next;
   settingsText = JSON.stringify(next);
-  document.title = next.general.placeName;
   theme.setSettings(next.general);
 
   const pages = next.layout.pages;
