@@ -1,12 +1,15 @@
-// The layout editor: which widgets are on which page, in what order, and the
-// order of the pages. Each page is drawn to scale, as on the keyboard's
-// screen. Widgets are dragged from the library onto a page, along a page,
-// between pages, or back to the library to take them off; every move has a
-// button too.
+// The layout editor: which widgets are on which page, in what order, the
+// order of the pages, and the rail. Each page is drawn to scale, as on the
+// keyboard's screen, rail included. Widgets are dragged from the library onto
+// a page, along a page, between pages, or back to the library to take them
+// off; pages and the rail's groups are dragged by their handles. Every move
+// has a button too.
 import { lineIcon, make } from "./core/dom.js";
 import { draggable } from "./core/drag.js";
+import { ICON_NAMES, ICONS as SHAPES } from "./core/icons.js";
+import { fitRail, pageIcon, railButton, railItems, themeIcons } from "./core/rail.js";
 import { loadSettings, previewNumber, saveSettings, watchSettings } from "./core/settings-client.js";
-import { layout as layoutSchema } from "./core/settings-schema.js";
+import { RAIL_GROUPS, layout as layoutSchema } from "./core/settings-schema.js";
 import { columnFor, widgetById, widgets } from "./widgets/registry.js";
 
 const pagesField = layoutSchema.fields.pages;
@@ -19,8 +22,10 @@ const statusEl = $("status");
 const saveBtn = $("save");
 const discardBtn = $("discard");
 
-let saved = null; // the stored pages
-let pages = null; // what the editor shows: [{ name, widgets: [id, …] }]
+let saved = null; // the stored layout: { pages, rail }
+let pages = null; // what the editor shows: [{ name, icon, inRail, widgets: [id, …] }]
+let rail = null; // and the rail: { order, labels, theme, swipe }
+let widgetSettings = null; // for the buttons widgets add to the rail
 let selected = 0; // the page a tapped library widget goes to
 let dirty = false;
 let showProblems = false; // after a Save that was refused
@@ -33,14 +38,18 @@ const ICONS = {
   remove: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3.2"/>',
+  shown: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  hidden: '<path d="M3 3l18 18M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.8 3.6M6.6 6.6C3.9 8.3 2.5 12 2.5 12S6 18.5 12 18.5c1.9 0 3.5-.6 4.9-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   settings: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
 };
 
 const pageName = (i) => pages[i].name.trim() || `Page ${i + 1}`;
 
 // ---------- Changes ----------
+const isDirty = () => JSON.stringify({ pages, rail }) !== JSON.stringify(saved);
+
 function changed() {
-  dirty = JSON.stringify(pages) !== JSON.stringify(saved);
+  dirty = isDirty();
   render();
   setStatus(dirty ? "Unsaved changes" : "");
 }
@@ -90,7 +99,7 @@ function addPage() {
   const names = new Set(pages.map((p) => p.name));
   let n = pages.length + 1;
   while (names.has(`Page ${n}`)) n++;
-  pages.push({ name: `Page ${n}`, widgets: [] });
+  pages.push({ name: `Page ${n}`, icon: "auto", inRail: true, widgets: [] });
   selected = pages.length - 1;
   changed();
   $("pages").lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -119,6 +128,7 @@ function iconButton(name, label, onClick, disabled = false) {
 
 function render() {
   renderLibrary();
+  renderRailSection();
   renderPages();
 }
 
@@ -169,7 +179,7 @@ function renderPages() {
     // Head: drag handle, name, count, page buttons
     const grip = make("span", { className: "grip", title: "Drag to reorder" });
     grip.append(lineIcon(ICONS.grip));
-    draggable(grip, pageDrag(p, card));
+    draggable(grip, reorderDrag($("pages"), card, p, (from, to) => reorderPages(() => move(pages, from, to))));
     const name = make("input", { type: "text", className: "page-name", value: page.name, maxLength: NAME_LENGTH, spellcheck: false, autocomplete: "off" });
     name.setAttribute("aria-label", `Name of page ${p + 1}`);
     name.addEventListener("focus", () => {
@@ -180,16 +190,28 @@ function renderPages() {
     });
     name.addEventListener("input", () => {
       page.name = name.value;
-      dirty = JSON.stringify(pages) !== JSON.stringify(saved);
+      dirty = isDirty();
       setStatus(dirty ? "Unsaved changes" : "");
       renderLibrary();
     });
+    const icon = make("button", { type: "button", className: "icon-btn page-icon", title: "Icon" });
+    icon.setAttribute("aria-label", `Icon for ${pageName(p)}: ${page.icon === "auto" ? "automatic" : page.icon}`);
+    icon.append(lineIcon(pageIcon(page)));
+    icon.addEventListener("click", () => pickIcon(p));
+    const inRail = iconButton(page.inRail ? "shown" : "hidden", page.inRail ? "Button in the rail: shown" : "Button in the rail: hidden", () => {
+      page.inRail = !page.inRail;
+      changed();
+    });
+    inRail.setAttribute("aria-pressed", String(page.inRail));
+    inRail.classList.toggle("off", !page.inRail);
     const head = make("header", { className: "page-head" });
     head.append(
       grip,
       make("span", { className: "page-number", textContent: `${p + 1}` }),
+      icon,
       name,
       make("span", { className: "page-count", textContent: `${page.widgets.length} of ${MAX_WIDGETS}` }),
+      inRail,
       iconButton("up", "Move page up", () => reorderPages(() => pages.splice(p - 1, 0, ...pages.splice(p, 1))), p === 0),
       iconButton("down", "Move page down", () => reorderPages(() => pages.splice(p + 1, 0, ...pages.splice(p, 1))), p === pages.length - 1),
       iconButton("remove", "Delete page", () => reorderPages(() => pages.splice(p, 1)), pages.length <= 1),
@@ -202,14 +224,27 @@ function renderPages() {
     if (!page.widgets.length) strip.append(make("div", { className: "empty-slot", textContent: "Drag a widget here" }));
     page.widgets.forEach((id, i) => strip.append(block(p, i, id)));
     const screen = make("div", { className: "screen" });
-    screen.append(strip, make("div", { className: "rail-stub" }));
+    screen.append(strip, previewRail(p));
     const frame = make("div", { className: "screen-frame" });
     frame.append(screen);
 
     const error = make("p", { className: "field-error", textContent: issues.get(p) ?? "" });
-    card.append(head, frame, make("p", { className: "drop-hint" }), error);
+    card.append(head, frame, make("p", { className: "page-notes" }), make("p", { className: "drop-hint" }), error);
     return card;
   }));
+  // Measured once on the page: whether each page's rail fits beside its widgets
+  for (const card of $("pages").children) {
+    const p = Number(card.dataset.page);
+    const fit = fitRail(card.querySelector(".rail"), card.querySelector(".strip").clientHeight, rail.labels);
+    const notes = [];
+    if (fit === "squeezed") notes.push(["info", "The labels don't fit with this many buttons, so this page's rail shows icons only."]);
+    if (fit === "overflows") notes.push(["warn", "Too many rail buttons for this page: hide some page buttons, or the light/dark button."]);
+    if (!pages[p].inRail && pages.length > 1) {
+      notes.push(rail.swipe ? ["info", "No rail button: reach this page by swiping."]
+        : ["warn", "No rail button and swiping is off, so this page can only be reached when music starts (Now Playing)."]);
+    }
+    card.querySelector(".page-notes").replaceChildren(...notes.map(([kind, text]) => make("span", { className: `note-${kind}`, textContent: text })));
+  }
   $("add-page").disabled = pages.length >= MAX_PAGES;
   $("add-page").textContent = pages.length >= MAX_PAGES ? `${MAX_PAGES} pages at most` : "Add page";
 }
@@ -306,45 +341,151 @@ function showMarker(strip, others, index) {
   strip.append(marker);
 }
 
-/** Dragging a page by its handle, to reorder the pages. */
-function pageDrag(p, card) {
+/**
+ * Dragging `row` within `list` by a handle, to reorder: pages, or the rail's
+ * groups. apply(from, to) makes the move.
+ */
+function reorderDrag(list, row, from, apply) {
   return () => {
     let to = null;
-    card.classList.add("is-dragged");
+    row.classList.add("is-dragged");
     return {
-      ghostOf: card,
+      ghostOf: row,
       over(_x, y) {
         clearDropState();
-        const others = [...document.querySelectorAll(".page-card")].filter((c) => c !== card);
+        const others = [...list.children].filter((c) => c !== row && !c.classList.contains("drop-marker"));
         to = others.findIndex((c) => {
           const r = c.getBoundingClientRect();
           return y < r.top + r.height / 2;
         });
         if (to < 0) to = others.length;
-        const list = $("pages").getBoundingClientRect();
+        const box = list.getBoundingClientRect();
         const edge = !others.length ? 0
-          : to === 0 ? others[0].getBoundingClientRect().top - list.top
-          : others[to - 1].getBoundingClientRect().bottom - list.top;
-        const marker = make("div", { className: "drop-marker page-marker" });
+          : to === 0 ? others[0].getBoundingClientRect().top - box.top
+          : others[to - 1].getBoundingClientRect().bottom - box.top;
+        const marker = make("div", { className: "drop-marker row-marker" });
         marker.style.top = `${edge}px`;
-        $("pages").append(marker);
+        list.append(marker);
       },
       drop() {
-        if (to === null || to === p) return;
-        reorderPages(() => pages.splice(to, 0, ...pages.splice(p, 1)));
+        if (to !== null && to !== from) apply(from, to);
       },
       end() {
         clearDropState();
-        card.classList.remove("is-dragged");
+        row.classList.remove("is-dragged");
       },
     };
   };
 }
 
+const move = (list, from, to) => list.splice(to, 0, ...list.splice(from, 1));
+
+// ---------- The rail ----------
+/** Page `p`'s rail as the screen will show it, as inert buttons. */
+function previewRail(p) {
+  const el = make("div", { className: "rail" });
+  el.setAttribute("aria-hidden", "true");
+  for (const item of railItems({ pages, rail }, p)) {
+    if (item.kind === "page") {
+      const page = pages[item.page];
+      el.append(railButton({ className: "page-btn", current: item.current, icon: lineIcon(pageIcon(page), "rail-icon"), label: pageName(item.page) }));
+    } else if (item.kind === "theme") {
+      el.append(railButton({ className: "theme-btn", icon: themeIcons(), label: document.documentElement.dataset.theme === "light" ? "Dark" : "Light" }));
+    } else {
+      for (const id of pages[p].widgets) {
+        for (const b of widgetById[id].railButtons?.(widgetSettings[id]) ?? []) {
+          el.append(railButton({ icon: lineIcon(b.icon, "rail-icon"), label: b.label }));
+        }
+      }
+    }
+  }
+  for (const button of el.children) button.tabIndex = -1;
+  return el;
+}
+
+const GROUP_ICONS = { pages: "grid", theme: "sun", widgets: "bus" };
+const GROUP_HELP = {
+  pages: "A button for each page, in the order of the pages below. The page on show is highlighted.",
+  theme: "Switches between light and dark.",
+  widgets: "Buttons a page's widgets add, such as Departures' route switch. Only on that page.",
+};
+
+function renderRailSection() {
+  const order = $("rail-order");
+  order.replaceChildren(...rail.order.map((group, i) => {
+    const info = RAIL_GROUPS.find((g) => g.value === group);
+    const row = make("div", { className: "rail-group" });
+    const grip = make("span", { className: "grip", title: "Drag to reorder" });
+    grip.append(lineIcon(ICONS.grip));
+    draggable(grip, reorderDrag(order, row, i, (from, to) => { move(rail.order, from, to); changed(); }));
+    const text = make("div", { className: "rail-group-text" });
+    text.append(make("span", { className: "field-label", textContent: info.label }), make("span", { className: "field-help", textContent: GROUP_HELP[group] }));
+    row.append(
+      grip,
+      lineIcon(SHAPES[GROUP_ICONS[group]], "rail-group-icon"),
+      text,
+      iconButton("up", `Move ${info.label} up`, () => { move(rail.order, i, i - 1); changed(); }, i === 0),
+      iconButton("down", `Move ${info.label} down`, () => { move(rail.order, i, i + 1); changed(); }, i === rail.order.length - 1),
+    );
+    return row;
+  }));
+
+  const fields = layoutSchema.fields.rail.fields;
+  $("rail-options").replaceChildren(...["labels", "theme", "swipe"].map((key) => {
+    const field = fields[key];
+    const id = `rail-${key}`;
+    const row = make("div", { className: "field toggle" });
+    const text = make("div", { className: "field-text" });
+    text.append(make("label", { className: "field-label", htmlFor: id, textContent: field.label }));
+    if (field.help) text.append(make("span", { className: "field-help", textContent: field.help }));
+    const input = make("input", { type: "checkbox", id, className: "switch", checked: rail[key] });
+    input.setAttribute("role", "switch");
+    input.addEventListener("change", () => {
+      rail[key] = input.checked;
+      changed();
+      $(id)?.focus();
+    });
+    row.append(text, input);
+    return row;
+  }));
+}
+
+// ---------- Icon picker ----------
+function pickIcon(p) {
+  const dialog = $("icon-picker");
+  $("icon-picker-title").textContent = `Icon for ${pageName(p)}`;
+  const choose = (icon) => {
+    pages[p].icon = icon;
+    dialog.close();
+    changed();
+  };
+  const option = (value, markup, label) => {
+    const button = make("button", { type: "button", className: `icon-option${pages[p].icon === value ? " chosen" : ""}`, title: label });
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-pressed", String(pages[p].icon === value));
+    button.append(lineIcon(markup), make("span", { textContent: label }));
+    button.addEventListener("click", () => choose(value));
+    return button;
+  };
+  const auto = { ...pages[p], icon: "auto" };
+  $("icon-grid").replaceChildren(
+    option("auto", pageIcon(auto), "Automatic"),
+    ...ICON_NAMES.map((name) => option(name, SHAPES[name], name)),
+  );
+  dialog.showModal();
+  dialog.querySelector(".icon-option.chosen")?.focus();
+}
+
+$("icon-picker").addEventListener("click", (ev) => {
+  if (ev.target === $("icon-picker")) $("icon-picker").close(); // a click on the backdrop
+});
+$("icon-picker-close").addEventListener("click", () => $("icon-picker").close());
+
 // ---------- Saving ----------
 function adopt(stored) {
-  saved = structuredClone(stored.pages);
+  saved = structuredClone({ pages: stored.pages, rail: stored.rail });
   pages = structuredClone(stored.pages);
+  rail = structuredClone(stored.rail);
   selected = Math.min(selected, pages.length - 1);
   dirty = false;
   showProblems = false;
@@ -361,7 +502,7 @@ saveBtn.addEventListener("click", () => {
     return;
   }
   // Only the layout is ours; the rest is as stored now, in case the settings page saved meanwhile
-  const result = saveSettings({ ...loadSettings().settings, layout: { pages } });
+  const result = saveSettings({ ...loadSettings().settings, layout: { pages, rail } });
   if (result.errors) {
     setStatus(`Couldn't save: ${result.errors.map((e) => `${e.path} ${e.message}`.trim()).join("; ")}`, true);
     return;
@@ -371,7 +512,7 @@ saveBtn.addEventListener("click", () => {
 });
 
 discardBtn.addEventListener("click", () => {
-  adopt({ pages: saved });
+  adopt(saved);
   setStatus("Changes discarded");
 });
 
@@ -385,12 +526,18 @@ addEventListener("beforeunload", (ev) => {
 $("note").textContent = previewNumber
   ? `Preview of pull request #${previewNumber}: this layout is separate from the main screen's.`
   : "Saved in this browser, like the settings. A screen open in the same browser updates as soon as you save.";
-adopt(loadSettings().settings.layout);
+const initial = loadSettings().settings;
+widgetSettings = initial.widgets;
+adopt(initial.layout);
 setStatus("");
 watchSettings((next) => {
-  if (JSON.stringify(next.layout.pages) === JSON.stringify(saved)) return;
+  if (JSON.stringify(next.widgets) !== JSON.stringify(widgetSettings)) {
+    widgetSettings = next.widgets; // e.g. another route, so another rail button
+    renderPages();
+  }
+  if (JSON.stringify(next.layout) === JSON.stringify(saved)) return;
   if (dirty) {
-    saved = structuredClone(next.layout.pages);
+    saved = structuredClone(next.layout);
     setStatus("Changed in another tab: Save overwrites, Discard loads it", true);
   } else {
     adopt(next.layout);

@@ -2,6 +2,7 @@
 // control rail, and rebuilds itself whenever the settings change.
 import { lineIcon, make, onTap } from "./core/dom.js";
 import { formatters } from "./core/format.js";
+import { fitRail, pageIcon, railButton as railButtonEl, railItems, themeIcons } from "./core/rail.js";
 import { loadSettings, watchSettings } from "./core/settings-client.js";
 import { store } from "./core/store.js";
 import { createTheme } from "./core/theme.js";
@@ -81,10 +82,8 @@ function showPage(index) {
 }
 
 // ---------- Rail ----------
-function railButton({ icon, label, ariaLabel, onTap: handler, className = "" }) {
-  const button = make("button", { className: `rail-btn ${className}`.trim(), type: "button" });
-  if (ariaLabel) button.setAttribute("aria-label", ariaLabel);
-  button.append(...(Array.isArray(icon) ? icon : [icon]), make("span", { className: "rail-label", textContent: label }));
+function railButton({ onTap: handler, ...look }) {
+  const button = railButtonEl(look);
   onTap(button, handler);
   return button;
 }
@@ -93,10 +92,7 @@ function themeButton() {
   const next = theme.current() === "light" ? "dark" : "light";
   return railButton({
     className: "theme-btn",
-    icon: [
-      lineIcon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', "rail-icon to-light"),
-      lineIcon('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>', "rail-icon to-dark"),
-    ],
+    icon: themeIcons(),
     label: next === "light" ? "Light" : "Dark",
     ariaLabel: `Switch to ${next} mode`,
     onTap: () => theme.toggle(),
@@ -105,25 +101,52 @@ function themeButton() {
 
 function renderRail() {
   if (!settings) return;
-  const pages = settings.layout.pages;
+  const { layout } = settings;
   const buttons = [];
-  if (pages.length > 1) {
-    const next = (pageIndex + 1) % pages.length;
-    const first = widgetById[pages[next].widgets[0]];
-    buttons.push(railButton({
-      icon: lineIcon(first?.icon ?? "", "rail-icon"),
-      label: pages[next].name,
-      ariaLabel: `Show the ${pages[next].name} page`,
-      onTap: () => { returnTo = null; showPage(next); },
-    }));
-  }
-  buttons.push(themeButton());
-  for (const m of mounted) {
-    if (m.page !== pageIndex) continue;
-    for (const action of m.instance.railActions?.() ?? []) buttons.push(railButton(action));
+  for (const item of railItems(layout, pageIndex)) {
+    if (item.kind === "page") {
+      const page = layout.pages[item.page];
+      buttons.push(railButton({
+        className: "page-btn",
+        current: item.current,
+        icon: lineIcon(pageIcon(page), "rail-icon"),
+        label: page.name,
+        ariaLabel: `Show the ${page.name} page`,
+        onTap: () => { returnTo = null; showPage(item.page); },
+      }));
+    } else if (item.kind === "theme") {
+      buttons.push(themeButton());
+    } else {
+      for (const m of mounted) {
+        if (m.page !== pageIndex) continue;
+        for (const action of m.instance.railActions?.() ?? []) buttons.push(railButton(action));
+      }
+    }
   }
   $("rail").replaceChildren(...buttons);
+  // Too many buttons for their labels: icons only, rather than off the screen
+  fitRail($("rail"), $("pages").clientHeight, layout.rail.labels);
 }
+
+// ---------- Swipe left or right to change page ----------
+let swipe = null;
+$("pages").addEventListener("pointerdown", (ev) => {
+  if (ev.pointerType !== "mouse") swipe = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, at: Date.now() };
+});
+addEventListener("pointerup", (ev) => {
+  if (!swipe || ev.pointerId !== swipe.id) return;
+  const dx = ev.clientX - swipe.x;
+  const dy = ev.clientY - swipe.y;
+  const quick = Date.now() - swipe.at < 800;
+  swipe = null;
+  // Mostly sideways, quick, and at least 8 % of the width (about 2 cm on the panel)
+  if (!settings?.layout.rail.swipe || !quick || Math.abs(dx) < innerWidth * 0.08 || Math.abs(dx) < Math.abs(dy) * 2) return;
+  const next = pageIndex + (dx < 0 ? 1 : -1);
+  if (next < 0 || next >= settings.layout.pages.length) return;
+  returnTo = null;
+  showPage(next);
+});
+addEventListener("pointercancel", () => { swipe = null; });
 
 // ---------- Now Playing: show its page when music starts, leave once paused a while ----------
 let playing = false;

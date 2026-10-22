@@ -12,12 +12,18 @@ export function refs(root) {
 // Mouse and keyboard use click; the click a browser may still synthesize from the
 // same tap is skipped. The skip is page-wide: a control that re-renders on tap
 // (the rail does) would otherwise get the click on its replacement and fire twice.
+// A touch that moved further than TAP_SLOP is a swipe, not a tap.
 let lastTouch = 0;
+const TAP_SLOP = 30; // px, about 4 mm on the panel
 export function onTap(el, handler) {
+  let down = null;
+  el.addEventListener("pointerdown", (ev) => { down = { x: ev.clientX, y: ev.clientY }; });
   el.addEventListener("pointerup", (ev) => {
     if (ev.pointerType === "mouse") return;
     lastTouch = Date.now();
-    handler(ev);
+    const moved = !down || Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > TAP_SLOP;
+    down = null;
+    if (!moved) handler(ev);
   });
   el.addEventListener("click", (ev) => {
     if (Date.now() - lastTouch < 800) return;

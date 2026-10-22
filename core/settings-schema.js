@@ -1,6 +1,7 @@
 // The whole settings document: General, Pages, and one section per widget.
 // Shared by the screen and the settings page; no DOM here.
 import { defaultsOf, validate } from "./fields.js";
+import { ICON_NAMES } from "./icons.js";
 import { widgets } from "../widgets/registry.js";
 
 export const SETTINGS_VERSION = 1;
@@ -36,6 +37,13 @@ export const general = {
   },
 };
 
+/** The rail's groups of buttons, which are arranged as a whole. */
+export const RAIL_GROUPS = [
+  { value: "pages", label: "Page buttons" },
+  { value: "theme", label: "Light/dark" },
+  { value: "widgets", label: "Widget buttons" },
+];
+
 export const layout = {
   type: "group",
   label: "Pages",
@@ -52,6 +60,11 @@ export const layout = {
         type: "group",
         fields: {
           name: { type: "text", label: "Name", help: "Shown on the page button.", default: "Page", maxLength: 12 },
+          icon: {
+            type: "select", label: "Icon", help: "On the page's rail button. Automatic uses the first widget's.", default: "auto",
+            options: [{ value: "auto", label: "Automatic" }, ...ICON_NAMES.map((name) => ({ value: name, label: name }))],
+          },
+          inRail: { type: "toggle", label: "Button in the rail", default: true },
           widgets: {
             type: "list",
             label: "Widgets, left to right",
@@ -65,9 +78,23 @@ export const layout = {
         },
       },
       default: [
-        { name: "Home", widgets: ["clock", "weather", "transit"] },
-        { name: "Music", widgets: ["nowplaying"] },
+        { name: "Home", icon: "home", inRail: true, widgets: ["clock", "weather", "transit"] },
+        { name: "Music", icon: "music", inRail: true, widgets: ["nowplaying"] },
       ],
+    },
+    rail: {
+      type: "group",
+      label: "Rail",
+      fields: {
+        order: {
+          type: "list", label: "Order, top to bottom", min: 3, max: 3, unique: true,
+          item: { type: "select", label: "Group", default: "pages", options: RAIL_GROUPS },
+          default: RAIL_GROUPS.map((g) => g.value),
+        },
+        labels: { type: "toggle", label: "Labels under the icons", help: "Without them about 6 buttons fit instead of 4.", default: true },
+        theme: { type: "toggle", label: "Light/dark button", default: true },
+        swipe: { type: "toggle", label: "Swipe to change page", help: "Left or right on the screen goes to the next or previous page.", default: true },
+      },
     },
   },
 };

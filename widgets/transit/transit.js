@@ -2,6 +2,7 @@
 // A route's `fromId` is a whole stop place or one platform (quay); departures
 // are kept only if the vehicle calls at `dest` after leaving.
 import { defineSymbols, make, refs } from "../../core/dom.js";
+import { ICONS } from "../../core/icons.js";
 import { fetchJSON } from "../../core/net.js";
 import { store } from "../../core/store.js";
 
@@ -22,21 +23,10 @@ const CALLS = `estimatedCalls(numberOfDepartures: 20, timeRange: 21600, whiteLis
   }`;
 const queryFor = (kind) => `query ($id: String!, $modes: [TransportMode]) { place: ${kind}(id: $id) { ${CALLS} } }`;
 
-const SYMBOLS = `
-  <symbol id="i-train" viewBox="0 0 24 24">
-    <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="5" y="2.5" width="14" height="14.5" rx="3.5"/>
-      <path d="M5 10h14M8.5 17l-2.5 4.5M15.5 17l2.5 4.5"/>
-      <circle cx="8.8" cy="13.5" r="0.4"/><circle cx="15.2" cy="13.5" r="0.4"/>
-    </g>
-  </symbol>
-  <symbol id="i-bus" viewBox="0 0 24 24">
-    <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="4" y="2.5" width="16" height="15" rx="2.5"/>
-      <path d="M4 10h16M7.5 17.5v3M16.5 17.5v3"/>
-      <circle cx="8" cy="13.8" r="0.4"/><circle cx="16" cy="13.8" r="0.4"/>
-    </g>
-  </symbol>`;
+const SYMBOLS = ["train", "bus"].map((name) => `
+  <symbol id="i-${name}" viewBox="0 0 24 24">
+    <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</g>
+  </symbol>`).join("");
 
 function parseDepartures(calls, route) {
   return calls.flatMap((c) => {
